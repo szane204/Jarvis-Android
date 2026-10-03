@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-
   workflow_dispatch:
 
 permissions:
@@ -12,17 +11,21 @@ permissions:
 
 jobs:
   build-apk:
-    name: Build Android APK
+    name: Build and Upload JARVIS APK
     runs-on: ubuntu-latest
 
     steps:
 
-      # 1. Get the repository
+      # ==============================
+      # 1. CHECKOUT PROJECT
+      # ==============================
       - name: Checkout repository
         uses: actions/checkout@v4
 
 
-      # 2. Install Java 17
+      # ==============================
+      # 2. JAVA
+      # ==============================
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
@@ -30,15 +33,19 @@ jobs:
           java-version: "17"
 
 
-      # 3. Configure Android SDK
-      - name: Configure Android SDK
+      # ==============================
+      # 3. ANDROID SDK PATH
+      # ==============================
+      - name: Set Android SDK paths
         run: |
           echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
           echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
           echo "$ANDROID_SDK_ROOT/platform-tools" >> "$GITHUB_PATH"
 
 
-      # 4. Install Android SDK packages
+      # ==============================
+      # 4. INSTALL ANDROID SDK
+      # ==============================
       - name: Install Android SDK
         run: |
           yes | sdkmanager --licenses || true
@@ -49,13 +56,4 @@ jobs:
             "build-tools;36.0.0"
 
 
-      # 5. Extract your JARVIS project
-      - name: Extract JARVIS project
-        run: |
-          rm -rf jarvis-project
-          mkdir jarvis-project
-
-          unzip -q "jarvis (2).zip" -d jarvis-project
-
-
-     
+      # ==============================
