@@ -6,6 +6,9 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build-apk:
     runs-on: ubuntu-latest
@@ -26,12 +29,6 @@ jobs:
           echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
           echo "$ANDROID_SDK_ROOT/platform-tools" >> "$GITHUB_PATH"
 
-      - name: Check Android SDK
-        run: |
-          echo "Android SDK:"
-          echo "$ANDROID_SDK_ROOT"
-          sdkmanager --version
-
       - name: Install Android SDK
         run: |
           yes | sdkmanager --licenses > /dev/null || true
@@ -40,21 +37,16 @@ jobs:
       - name: Extract JARVIS project
         run: |
           rm -rf jarvis-project
-          mkdir -p jarvis-project
+          mkdir jarvis-project
           unzip -q "jarvis (2).zip" -d jarvis-project
 
-      - name: Verify JARVIS project
+      - name: Verify Android project
         run: |
           cd jarvis-project
-
-          echo "Checking project..."
-
           test -f settings.gradle.kts
           test -f build.gradle.kts
           test -f app/build.gradle.kts
-          test -f app/src/main/AndroidManifest.xml
-
-          echo "JARVIS Android project found successfully."
+          echo "JARVIS Android project found."
 
       - name: Install Gradle 9.3.1
         run: |
@@ -68,20 +60,17 @@ jobs:
           gradle wrapper --gradle-version 9.3.1
           chmod +x gradlew
 
-      - name: Check Gradle
+      - name: Build debug APK
         run: |
           cd jarvis-project
-          ./gradlew --version
-
-      - name: Build JARVIS debug APK
-        run: |
-          cd jarvis-project
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug \
+            --no-daemon \
+            --stacktrace \
+            --console=plain
 
       - name: Find APK
         if: always()
         run: |
-          echo "Searching for APK..."
           find jarvis-project -type f -name "*.apk" -print
 
       - name: Upload APK
