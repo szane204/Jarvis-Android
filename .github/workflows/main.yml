@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -28,13 +29,16 @@ jobs:
 
       - name: Check Android SDK
         run: |
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
           sdkmanager --version
-          echo "Android SDK: $ANDROID_SDK_ROOT"
 
       - name: Install Android SDK packages
         run: |
           yes | sdkmanager --licenses > /dev/null || true
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
 
       - name: Extract JARVIS project
         run: |
@@ -42,54 +46,23 @@ jobs:
           mkdir -p jarvis-project
           unzip -o "jarvis (2).zip" -d jarvis-project
 
-      - name: Check JARVIS project
+      - name: Show extracted project
         run: |
-          echo "JARVIS project files:"
-          cd jarvis-project
-          ls -la
-          echo ""
-          echo "Checking Gradle files:"
-          find . -maxdepth 3 \( -name "settings.gradle" -o -name "settings.gradle.kts" -o -name "build.gradle" -o -name "build.gradle.kts" \) -print
+          echo "========== PROJECT FILES =========="
+          find jarvis-project -maxdepth 4 -type f | sort
+          echo "==================================="
+
+      - name: Find Android project
+        run: |
+          echo "========== GRADLE FILES =========="
+          find jarvis-project -type f \
+            -name "settings.gradle" \
+            -o -name "settings.gradle.kts" \
+            -o -name "build.gradle" \
+            -o -name "build.gradle.kts" \
+            -print
+          echo "================================="
 
       - name: Install Gradle
         run: |
-          wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
-          unzip -q gradle-8.7-bin.zip -d /opt
-          echo "/opt/gradle-8.7/bin" >> "$GITHUB_PATH"
-          gradle --version
-
-      - name: Prepare Gradle wrapper
-        run: |
-          cd jarvis-project
-
-          if [ -f "gradlew" ]; then
-            echo "Gradle wrapper already exists."
-            chmod +x gradlew
-          else
-            echo "Gradle wrapper not found."
-            echo "Generating Gradle wrapper..."
-            gradle wrapper --gradle-version 8.7
-            chmod +x gradlew
-          fi
-
-      - name: Check Gradle
-        run: |
-          cd jarvis-project
-          ./gradlew --version
-
-      - name: Build debug APK
-        run: |
-          cd jarvis-project
-          ./gradlew assembleDebug --stacktrace
-
-      - name: Find APK
-        run: |
-          echo "Searching for APK..."
-          find jarvis-project -type f -name "*.apk" -print
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: JARVIS-debug-APK
-          path: jarvis-project/**/build/outputs/apk/**/*.apk
-          if-no-files-found: error
+          wget -q https://services.gradle.org/dis
