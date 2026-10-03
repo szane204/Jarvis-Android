@@ -10,11 +10,11 @@ permissions:
   contents: read
 
 jobs:
-  build-apk:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Java 17
@@ -23,7 +23,7 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set Android SDK paths
+      - name: Set Android SDK
         run: |
           echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
           echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
@@ -31,52 +31,26 @@ jobs:
 
       - name: Install Android SDK
         run: |
-          yes | sdkmanager --licenses > /dev/null || true
-          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          yes | sdkmanager --licenses || true
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-36" \
+            "build-tools;36.0.0"
 
-      - name: Extract JARVIS project
+      - name: Extract JARVIS
         run: |
           rm -rf jarvis-project
           mkdir jarvis-project
           unzip -q "jarvis (2).zip" -d jarvis-project
 
-      - name: Verify Android project
+      - name: Check project
         run: |
           cd jarvis-project
           test -f settings.gradle.kts
           test -f build.gradle.kts
           test -f app/build.gradle.kts
-          echo "JARVIS Android project found."
+          echo "Android project found."
 
-      - name: Install Gradle 9.3.1
+      - name: Install Gradle
         run: |
-          wget -q https://services.gradle.org/distributions/gradle-9.3.1-bin.zip
-          unzip -q gradle-9.3.1-bin.zip -d /opt
-          echo "/opt/gradle-9.3.1/bin" >> "$GITHUB_PATH"
-
-      - name: Generate Gradle wrapper
-        run: |
-          cd jarvis-project
-          gradle wrapper --gradle-version 9.3.1
-          chmod +x gradlew
-
-      - name: Build debug APK
-        run: |
-          cd jarvis-project
-          ./gradlew assembleDebug \
-            --no-daemon \
-            --stacktrace \
-            --console=plain
-
-      - name: Find APK
-        if: always()
-        run: |
-          find jarvis-project -type f -name "*.apk" -print
-
-      - name: Upload APK
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: JARVIS-debug-APK
-          path: jarvis-project/app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
+          wget -q
