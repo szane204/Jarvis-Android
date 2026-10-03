@@ -11,7 +11,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -39,15 +38,58 @@ jobs:
 
       - name: Extract JARVIS project
         run: |
+          rm -rf jarvis-project
           mkdir -p jarvis-project
           unzip -o "jarvis (2).zip" -d jarvis-project
 
-      - name: Locate JARVIS project
+      - name: Check JARVIS project
         run: |
-          echo "Searching for Gradle project..."
-          find jarvis-project -maxdepth 4 \
-            -name "settings.gradle" -o -name "settings.gradle.kts" \
-            -o -name "build.gradle" -o -name "build.gradle.kts" \
-            -print
+          echo "JARVIS project files:"
+          cd jarvis-project
+          ls -la
+          echo ""
+          echo "Checking Gradle files:"
+          find . -maxdepth 3 \( -name "settings.gradle" -o -name "settings.gradle.kts" -o -name "build.gradle" -o -name "build.gradle.kts" \) -print
 
-      - name: Find
+      - name: Install Gradle
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
+          unzip -q gradle-8.7-bin.zip -d /opt
+          echo "/opt/gradle-8.7/bin" >> "$GITHUB_PATH"
+          gradle --version
+
+      - name: Prepare Gradle wrapper
+        run: |
+          cd jarvis-project
+
+          if [ -f "gradlew" ]; then
+            echo "Gradle wrapper already exists."
+            chmod +x gradlew
+          else
+            echo "Gradle wrapper not found."
+            echo "Generating Gradle wrapper..."
+            gradle wrapper --gradle-version 8.7
+            chmod +x gradlew
+          fi
+
+      - name: Check Gradle
+        run: |
+          cd jarvis-project
+          ./gradlew --version
+
+      - name: Build debug APK
+        run: |
+          cd jarvis-project
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Find APK
+        run: |
+          echo "Searching for APK..."
+          find jarvis-project -type f -name "*.apk" -print
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: JARVIS-debug-APK
+          path: jarvis-project/**/build/outputs/apk/**/*.apk
+          if-no-files-found: error
