@@ -53,4 +53,26 @@ jobs:
           ls -la
           echo ""
           echo "Gradle wrapper:"
-          ls -la
+          ls -la gradlew
+          echo ""
+          echo "Gradle version:"
+          grep distributionUrl gradle/wrapper/gradle-wrapper.properties
+
+      - name: Make Gradle wrapper executable
+        working-directory: jarvis-project
+        run: chmod +x gradlew
+
+      - name: Build debug APK
+        working-directory: jarvis-project
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Find APK
+        run: |
+          find jarvis-project -type f -name "*.apk" -print
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: JARVIS-debug-APK
+          path: jarvis-project/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
