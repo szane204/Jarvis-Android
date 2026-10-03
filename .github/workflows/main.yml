@@ -1,19 +1,17 @@
 name: Build JARVIS APK
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - main
-
-permissions:
-  contents: read
+  workflow_dispatch:
 
 jobs:
   build-apk:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -25,54 +23,31 @@ jobs:
 
       - name: Set Android SDK paths
         run: |
-          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> "$GITHUB_ENV"
-          echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> "$GITHUB_ENV"
-          echo "/usr/local/lib/android/sdk/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
-          echo "/usr/local/lib/android/sdk/platform-tools" >> "$GITHUB_PATH"
+          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
+          echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "$ANDROID_SDK_ROOT/platform-tools" >> "$GITHUB_PATH"
 
       - name: Check Android SDK
         run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          which sdkmanager
           sdkmanager --version
+          echo "Android SDK: $ANDROID_SDK_ROOT"
 
       - name: Install Android SDK packages
         run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Extract JARVIS project
         run: |
           mkdir -p jarvis-project
-          unzip -q "jarvis (2).zip" -d jarvis-project
+          unzip -o "jarvis (2).zip" -d jarvis-project
 
-      - name: Check JARVIS project
-        working-directory: jarvis-project
+      - name: Locate JARVIS project
         run: |
-          echo "JARVIS project:"
-          ls -la
-          echo ""
-          echo "Gradle wrapper:"
-          ls -la gradlew
-          echo ""
-          echo "Gradle version:"
-          grep distributionUrl gradle/wrapper/gradle-wrapper.properties
+          echo "Searching for Gradle project..."
+          find jarvis-project -maxdepth 4 \
+            -name "settings.gradle" -o -name "settings.gradle.kts" \
+            -o -name "build.gradle" -o -name "build.gradle.kts" \
+            -print
 
-      - name: Make Gradle wrapper executable
-        working-directory: jarvis-project
-        run: chmod +x gradlew
-
-      - name: Build debug APK
-        working-directory: jarvis-project
-        run: ./gradlew --no-daemon assembleDebug
-
-      - name: Find APK
-        run: |
-          find jarvis-project -type f -name "*.apk" -print
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: JARVIS-debug-APK
-          path: jarvis-project/app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
+      - name: Find
