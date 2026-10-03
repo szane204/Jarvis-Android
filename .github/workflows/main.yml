@@ -23,39 +23,36 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK packages
+      - name: Prepare Android SDK
         run: |
           yes | sdkmanager --licenses > /dev/null || true
           sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Extract JARVIS project
         run: |
-          mkdir -p jarvis-project
+          mkdir jarvis-project
           unzip -q "jarvis (2).zip" -d jarvis-project
 
-      - name: Check project structure
+      - name: Check JARVIS project
+        working-directory: jarvis-project
         run: |
-          echo "JARVIS project files:"
-          find jarvis-project -maxdepth 3 -type f | sort
+          echo "Project files:"
+          ls -la
+          echo ""
+          echo "Gradle files:"
+          find . -maxdepth 3 -type f \( -name "settings.gradle*" -o -name "build.gradle*" -o -name "gradlew" \) -print
 
-      - name: Install Gradle 9.3.1
-        run: |
-          curl -L -o gradle.zip https://services.gradle.org/distributions/gradle-9.3.1-bin.zip
-          unzip -q gradle.zip -d "$HOME"
-          echo "$HOME/gradle-9.3.1/bin" >> "$GITHUB_PATH"
+      - name: Make Gradle wrapper executable
+        working-directory: jarvis-project
+        run: chmod +x gradlew
 
       - name: Build debug APK
         working-directory: jarvis-project
-        run: |
-          gradle --version
-          gradle --no-daemon assembleDebug
+        run: ./gradlew --no-daemon assembleDebug
 
       - name: Find APK
-        run: |
-          find jarvis-project -type f -name "*.apk" -print
+        working-directory: jarvis-project
+        run: find . -type f -name "*.apk" -print
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
